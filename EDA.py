@@ -10,8 +10,6 @@ Original file is located at
 
 El presente análisis exploratorio tiene como objetivo comprender la estructura y las características del conjunto de datos VREN, centrado en jugadas de voleibol. Se analizan variables relacionadas con zonas de recepción, golpeo, tipos de jugada y resultados, con el fin de identificar patrones relevantes que puedan apoyar la toma de decisiones tácticas o el desarrollo de modelos predictivos.
 """
-import matplotlib
-matplotlib.use('TkAgg')  # Use a compatible backend
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -19,17 +17,17 @@ import matplotlib.image as mpimg
 import numpy as np
 import seaborn as sns
 
-# Cargar imagen de campo completo y campo dividido en mitades
-img_field = mpimg.imread('./Zonas Voleibol.png')
-img_field_half = mpimg.imread('./Zonas Voleibol_mitad.png')
-df = pd.read_csv("./dataset_full.csv", delimiter=',')
+
+img_field = mpimg.imread('Zonas Voleibol.png')
+img_field_half = mpimg.imread('Zonas Voleibol_mitad.png')
+df = pd.read_csv("dataset_full.csv", delimiter=',')
 
 #Mostrar Imagen con las zonas
-"""plt.imshow(img_field)
+plt.imshow(img_field)
 plt.title('División de Zonas')
 plt.axis('off')
 plt.show()
-"""
+
 """El dataset cuenta con 2.429 registros y 18 columnas. Las variables incluyen posiciones (ej. `hitter_location`, `receive_location`), descripciones de jugadas (`hit_type`, `pass_rating`), y resultado del rally (`winning_team`, `win_reason`).
 
 Se identificaron valores nulos en columnas como `serve_type`, `hit_land_location`, `block_touch`, y `set_location`.
@@ -39,23 +37,30 @@ Se identificaron valores nulos en columnas como `serve_type`, `hit_land_location
 La variable `receive_location` representa la zona en la que el jugador defensor realiza la recepción del balón.
 """
 
-filtered_df = df[df['receive_location'].notna()]
+receive_locs = df['receive_location'].dropna().astype(int)
 # Calcular el porcentaje de uso por zona de recepción (receive_location)
-receive_location_percentages = filtered_df['receive_location'].dropna().astype(int).value_counts(normalize=True).sort_index() * 100
+receive_location_percentages = receive_locs.value_counts(normalize=True).sort_index() * 100
 top_4_receive = receive_location_percentages.sort_values(ascending=False).head(4)
 print("Las 4 zonas con mayor porcentaje de recepciones son:")
 for zona, porcentaje in top_4_receive.items():
     print(f"Zona {zona}: {porcentaje:.1f}%")
 
+# Preparar resultados para mostrar
+receive_summary = pd.DataFrame({
+    'Porcentaje (%)': receive_location_percentages,
+    'Cantidad': receive_locs.value_counts()
+})
+print(receive_summary)
+
 """### Histograma Frecuencia de Zonas de Recepción"""
 
 # Aplicamos un color diferente para las 4 zonas con mayor porcentaje
-colors = ['orange' if zone in top_4_receive.index else 'skyblue' for zone in receive_location_percentages.index]
+colors = ['orange' if zone in top_4_receive.index else '#094293' for zone in receive_location_percentages.index]
 # Crear histograma (barras) con porcentajes
 plt.figure(figsize=(10, 6))
 receive_location_percentages.plot(kind='bar',color = colors)
 # Personalizar gráfico
-plt.title('Porcentaje de Zonas de Recepción (receive_location)')
+plt.title('Distribución Porcentual de Zonas de Recepción (receive_location)')
 plt.xlabel('Zona de Recepción')
 plt.ylabel('Porcentaje (%)')
 plt.xticks(rotation=0)
@@ -63,9 +68,7 @@ plt.grid(axis='y')
 plt.tight_layout()
 plt.show()
 
-"""De la misma forma la variable
-
-## Zona de Recepción del Pase
+"""## Zona de Recepción del Pase
 
 La variable `pass_land_location` representa la zona del campo en la que aterriza el pase recibido tras la acción de recepción o defensa. Normalmente este pase va dirigido al colocador del equipo.
 """
@@ -75,16 +78,41 @@ pass_locs = df['pass_land_location'].dropna().astype(int)
 
 # Calcular porcentaje por zona
 percentages_pass_locs = pass_locs.value_counts(normalize=True).sort_index() * 100
-# Cogemos las 4 zonas con mayor porcentaje
-top_4_zones = percentages_pass_locs.sort_values(ascending=False).head(4)
+# Cogemos las 4 zonas con mayor porcentaje (keep as a Series to iterate with items())
+top_4_zones_series = percentages_pass_locs.sort_values(ascending=False).head(4)
 # Imprimir resultado
 print("Las 4 zonas con mayor porcentaje de pases recibidos son:")
-for zona, porcentaje in top_4_zones.items():
+# Iterate over the Series using .items()
+for zona, porcentaje in top_4_zones_series.items():
     print(f"Zona {zona}: {porcentaje:.1f}%")
+
+
+# Preparar resultados para mostrar
+receive_summary = pd.DataFrame({
+    'Porcentaje (%)': percentages_pass_locs,
+    'Cantidad': pass_locs.value_counts()
+})
+print(receive_summary)
+
+"""### Histograma Zona de Recepción del Pase"""
+
+# Crear histograma (barras) con porcentajes
+colors1 = ['orange' if zone in top_4_zones_series else '#094293' for zone in percentages_pass_locs.index]
+plt.figure(figsize=(10, 6))
+percentages_pass_locs.plot(kind='bar',color = colors1)
+
+# Personalizar gráfico
+plt.title('Distribución Porcentual de Zonas de Recepción de Pase (pass_land_location)')
+plt.xlabel('Zona')
+plt.ylabel('Porcentaje (%)')
+plt.xticks(rotation=0)
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
 
 """De esta columna depende la variable `pass_rating`. Si el pase llega dentro de las zonas 11, 12 o 13 estaremos hablando de un buen pase para el colocador (in) y si aterriza en cualquier otra zona será un pase difícil para el colocador (out)."""
 
-#
+# Eliminar valores nulos
 pass_rating = df['pass_rating'].dropna()
 
 pass_rating_percent = pass_rating.value_counts(normalize=True).sort_index() * 100
@@ -97,15 +125,39 @@ pass_rating_summary = pd.DataFrame({
 })
 print(pass_rating_summary)
 
-"""### Histograma Zona de Recepción del Pase"""
+"""Observamos como la **zona 13** es en la que se recibe un mayor número de pases ya que es la posición que en la que se va a ubicar habitualmente el **colocador** del equipo.
+
+## Zonas Colocación Digger
+"""
+
+# Eliminar valores nulos
+digger_locs = df['digger_location'].dropna().astype(int)
+
+# Calcular porcentaje por zona
+percentages_digger_locs = digger_locs.value_counts(normalize=True).sort_index() * 100
+# Cogemos las 4 zonas con mayor porcentaje (keep as a Series to iterate with items())
+top_4_zones_digger = percentages_digger_locs.sort_values(ascending=False).head(4)
+# Imprimir resultado
+print("Las 4 zonas donde más se colocan los receptores son:")
+# Iterate over the Series using .items()
+for zona, porcentaje in top_4_zones_digger.items():
+    print(f"Zona {zona}: {porcentaje:.1f}%")
+
+
+# Preparar resultados para mostrar
+digger_summary = pd.DataFrame({
+    'Porcentaje (%)': percentages_digger_locs,
+    'Cantidad': digger_locs.value_counts()
+})
+print(digger_summary)
 
 # Crear histograma (barras) con porcentajes
-colors1 = ['orange' if zone in top_4_zones else 'skyblue' for zone in percentages_pass_locs.index]
+colors1 = ['orange' if zone in top_4_zones_digger else '#094293' for zone in percentages_digger_locs.index]
 plt.figure(figsize=(10, 6))
-percentages_pass_locs.plot(kind='bar',color = colors1)
+percentages_digger_locs.plot(kind='bar',color = colors1)
 
 # Personalizar gráfico
-plt.title('Porcentajes Zonas de Recepción de Pase (pass_land_location)')
+plt.title('Distribución Porcentual de Zonas de Colocación de Receptores (digger_location)')
 plt.xlabel('Zona')
 plt.ylabel('Porcentaje (%)')
 plt.xticks(rotation=0)
@@ -113,9 +165,7 @@ plt.grid(axis='y')
 plt.tight_layout()
 plt.show()
 
-"""Observamos como la **zona 13** es en la que se recibe un mayor número de pases ya que es la posición que en la que se va a ubicar habitualmente el **colocador** del equipo.
-
-## Zonas de Remate
+"""## Zonas de Remate
 
 La variable `hitter_location` representa la zona del campo en la que el rematador golpea el balón.
 """
@@ -128,12 +178,19 @@ print("Las 4 zonas con mayor cantidad de golpes son:")
 for zona, porcentaje in top_4_hit_loc.items():
     print(f"Zona {zona}: {porcentaje:.1f}%")
 
-colors2 = ['orange' if zone in top_4_hit_loc.index else 'skyblue' for zone in hit_loc_percent.index]
+# Preparar resultados para mostrar
+hitter_loc_summary = pd.DataFrame({
+    'Porcentaje (%)': hit_loc_percent,
+    'Cantidad': hit_loc.value_counts()
+})
+print(hitter_loc_summary)
+
+colors2 = ['orange' if zone in top_4_hit_loc.index else '#094293' for zone in hit_loc_percent.index]
 # Crear histograma con todas las zonas de golpeo (hitter_location) en el eje x
 plt.figure(figsize=(10, 6))
 hit_loc_percent.sort_index().plot(kind='bar',color = colors2)
 
-plt.title('Porcentajes de Zonas de Remate (hitter_location)')
+plt.title('Distribución Porcentual de Zonas de Remate (hitter_location)')
 plt.xlabel('Zona de Remate')
 plt.ylabel('Porcentaje (%)')
 plt.xticks(rotation=0)
@@ -152,6 +209,7 @@ filtered_hits = filtered_hits[filtered_hits <= 15]
 total_hits = len(filtered_hits)
 
 # Crear una matriz 3x5 con la disposición deseada
+
 # Fila 1: [15, 14, 13, 12, 11]
 # Fila 2: [10,  9,  8,  7,  6]
 # Fila 3: [ 5,  4,  3,  2,  1]
@@ -197,6 +255,36 @@ plt.imshow(img_field_half)
 plt.axis('off')
 plt.show()
 
+"""## Zonas de Caída de Remate"""
+
+hit_land_loc = df['hit_land_location'].dropna().astype(int)
+hit_land_loc_percent = hit_land_loc.value_counts(normalize=True).sort_index() * 100
+top_4_hit_land_loc = hit_land_loc_percent.sort_values(ascending=False).head(4)
+
+print("Las 4 zonas donde más caen los balones ofensivos son:")
+for zona, porcentaje in top_4_hit_land_loc.items():
+    print(f"Zona {zona}: {porcentaje:.1f}%")
+
+# Preparar resultados para mostrar
+hit_land_summary = pd.DataFrame({
+    'Porcentaje (%)': hit_land_loc_percent,
+    'Cantidad': hit_land_loc.value_counts()
+})
+print(hit_land_summary)
+
+colors3 = ['orange' if zone in top_4_hit_land_loc.index else '#094293' for zone in hit_land_loc_percent.index]
+# Crear histograma con todas las zonas de golpeo (hitter_location) en el eje x
+plt.figure(figsize=(10, 6))
+hit_land_loc_percent.sort_index().plot(kind='bar',color = colors3)
+
+plt.title('Distribución Porcentual de Zonas Donde Cae el Remate (hit_land_location)')
+plt.xlabel('Zona de Remate')
+plt.ylabel('Porcentaje (%)')
+plt.xticks(rotation=0)
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+
 """## Tipo de Saque
 
 La variable `serve_type` indica el tipo de saque que realiza el equipo al que le toca realizar el mismo.
@@ -209,8 +297,11 @@ serve_data = df['serve_type'].dropna()
 total_saques = serve_data.shape[0]
 
 # Calcular porcentaje por tipo de saque
-serve_percentages = serve_data.value_counts(normalize=True) * 100
+serve_percentages = serve_data.value_counts(normalize=True).sort_index() * 100
 serve_percentages = serve_percentages.round(1)
+
+top_serve = serve_percentages.sort_values(ascending=False).head(1)
+colors_serve = ['orange' if zone in top_serve.index else '#094293' for zone in serve_percentages.index]
 
 # Preparar resultados para mostrar
 serve_summary = pd.DataFrame({
@@ -219,4 +310,225 @@ serve_summary = pd.DataFrame({
 })
 print(serve_summary)
 
-"""Sobresale el saque con salto que es característico por ser un saque potente y rápido."""
+# Crear histograma con todas las zonas de golpeo (hitter_location) en el eje x
+plt.figure(figsize=(10, 6))
+serve_percentages.sort_index().plot(kind='bar',color = colors_serve)
+
+plt.title('Distribución Porcentual de Tipos de Saque (serve_type)')
+plt.xlabel('Tipos de Saque')
+plt.ylabel('Porcentaje (%)')
+plt.xticks(rotation=0)
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+
+"""Sobresale el saque con salto que es característico por ser un saque potente y rápido.
+
+## Tipo de Victoria/Derrota
+"""
+
+# Eliminar valores nulos en la columna serve_type
+win_reason_data = df['win_reason'].dropna()
+
+# Calcular porcentaje por tipo de saque
+win_reason_percentages = win_reason_data.value_counts(normalize=True).sort_index() * 100
+win_reason_percentages = win_reason_percentages.round(1)
+
+top_win_reason = win_reason_percentages.sort_values(ascending=False).head(3)
+colors_win = ['orange' if zone in top_win_reason.index else '#094293' for zone in win_reason_percentages.index]
+
+# Preparar resultados para mostrar
+win_reason_summary = pd.DataFrame({
+    'Porcentaje (%)': win_reason_percentages,
+    'Cantidad': win_reason_data.value_counts()
+})
+print(win_reason_summary)
+
+# Crear histograma con todas las zonas de golpeo (hitter_location) en el eje x
+plt.figure(figsize=(10, 6))
+win_reason_percentages.sort_index().plot(kind='bar',color = colors_win)
+
+plt.title('Distribución Porcentual de Tipos de Victoria/Derrota (win/lose_reason)')
+plt.xlabel('Tipos de Saque')
+plt.ylabel('Porcentaje (%)')
+plt.xticks(rotation=0)
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+
+"""## Valoración de Colocación"""
+
+# Eliminar valores nulos en la columna serve_type
+set_type_data = df['set_type'].dropna()
+
+# Calcular porcentaje por tipo de saque
+set_type_percentages = set_type_data.value_counts(normalize=True).sort_index() * 100
+set_type_percentages = set_type_percentages.round(1)
+
+top_set_type = set_type_percentages.sort_values(ascending=False).head(1)
+colors_serve = ['orange' if zone in top_set_type.index else '#094293' for zone in set_type_percentages.index]
+
+# Preparar resultados para mostrar
+set_type_summary = pd.DataFrame({
+    'Porcentaje (%)': set_type_percentages,
+    'Cantidad':set_type_data.value_counts()
+})
+print(set_type_summary)
+
+# Crear histograma con todas las zonas de golpeo (hitter_location) en el eje x
+plt.figure(figsize=(10, 6))
+set_type_percentages.sort_index().plot(kind='bar',color = colors_serve)
+
+plt.title('Distribución Porcentual de Valoración de Colocación (set_type)')
+plt.xlabel('Valoración de Colocación')
+plt.ylabel('Porcentaje (%)')
+plt.xticks(rotation=0)
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+
+"""## Tipo de Colocación"""
+
+# Eliminar valores nulos en la columna serve_type
+set_loc_data = df['set_location'].dropna()
+
+# Calcular porcentaje por tipo de saque
+set_loc_percentages = set_loc_data.value_counts(normalize=True).sort_index() * 100
+set_loc_percentages = set_loc_percentages.round(1)
+
+top_set_loc = set_loc_percentages.sort_values(ascending=False).head(3)
+colors_serve = ['orange' if zone in top_set_loc.index else '#094293' for zone in set_loc_percentages.index]
+
+# Preparar resultados para mostrar
+set_loc_summary = pd.DataFrame({
+    'Porcentaje (%)': set_loc_percentages,
+    'Cantidad':set_loc_data.value_counts()
+})
+print(set_loc_summary)
+
+# Crear histograma con todas las zonas de golpeo (hitter_location) en el eje x
+plt.figure(figsize=(10, 6))
+set_loc_percentages.sort_index().plot(kind='bar',color = colors_serve)
+
+plt.title('Distribución Porcentual de Tipo de Colocación (set_location)')
+plt.xlabel('Tipo de Colocación')
+plt.ylabel('Porcentaje (%)')
+plt.xticks(rotation=0)
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+
+"""## Tipo de Ataque"""
+
+# Eliminar valores nulos en la columna serve_type
+hit_type_data = df['hit_type'].dropna()
+
+# Calcular porcentaje por tipo de saque
+hit_type_percentages = hit_type_data.value_counts(normalize=True).sort_index() * 100
+hit_type_percentages = hit_type_percentages.round(1)
+
+top_hit_type = hit_type_percentages.sort_values(ascending=False).head(3)
+colors_serve = ['orange' if zone in top_hit_type.index else '#094293' for zone in hit_type_percentages.index]
+
+# Preparar resultados para mostrar
+hit_type_summary = pd.DataFrame({
+    'Porcentaje (%)': hit_type_percentages,
+    'Cantidad':hit_type_data.value_counts()
+})
+print(hit_type_summary)
+
+# Crear histograma con todas las zonas de golpeo (hitter_location) en el eje x
+plt.figure(figsize=(10, 6))
+hit_type_percentages.sort_index().plot(kind='bar',color = colors_serve)
+
+plt.title('Distribución Porcentual de Tipo de Colocación (hit_type)')
+plt.xlabel('Tipo de Ataque')
+plt.ylabel('Porcentaje (%)')
+plt.xticks(rotation=0)
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+
+"""## Toque Bloqueo
+
+"""
+
+# Eliminar valores nulos en la columna serve_type
+block_touch_data = df['block_touch'].dropna()
+
+# Calcular porcentaje por tipo de saque
+block_touch_percentages = block_touch_data.value_counts(normalize=True).sort_index() * 100
+block_touch_percentages = block_touch_percentages.round(1)
+
+top_block_touch = block_touch_percentages.sort_values(ascending=False).head(1)
+colors_serve = ['orange' if zone in top_block_touch.index else '#094293' for zone in block_touch_percentages.index]
+
+# Preparar resultados para mostrar
+block_touch_summary = pd.DataFrame({
+    'Porcentaje (%)': block_touch_percentages,
+    'Cantidad':block_touch_data.value_counts()
+})
+print(block_touch_summary)
+
+# Crear histograma con todas las zonas de golpeo (hitter_location) en el eje x
+plt.figure(figsize=(10, 6))
+block_touch_percentages.sort_index().plot(kind='bar',color = colors_serve)
+
+plt.title('Distribución Porcentual de Toque en Bloqueo (block_touch)')
+plt.xlabel('Toque en Bloqueo')
+plt.ylabel('Porcentaje (%)')
+plt.xticks(rotation=0)
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+
+"""## Número de Bloqueadores"""
+
+# Eliminar valores nulos en la columna serve_type
+num_blockers_data = df['num_blockers'].dropna().astype(int)
+
+# Calcular porcentaje por tipo de saque
+num_blockers_percentages = num_blockers_data.value_counts(normalize=True).sort_index() * 100
+num_blockers_percentages = num_blockers_percentages.round(1)
+
+top_num_blockers = num_blockers_percentages.sort_values(ascending=False).head(1)
+colors_blockers = ['orange' if zone in top_num_blockers.index else '#094293' for zone in num_blockers_percentages.index]
+
+# Preparar resultados para mostrar
+num_blockers_summary = pd.DataFrame({
+    'Porcentaje (%)': num_blockers_percentages,
+    'Cantidad':num_blockers_data.value_counts()
+})
+print(num_blockers_summary)
+
+# Crear histograma con todas las zonas de golpeo (hitter_location) en el eje x
+plt.figure(figsize=(10, 6))
+num_blockers_percentages.sort_index().plot(kind='bar',color = colors_blockers)
+
+plt.title('Distribución Porcentual de Número de Bloqueadores (num_blockers)')
+plt.xlabel('Número Bloqueadores')
+plt.ylabel('Porcentaje (%)')
+plt.xticks(rotation=0)
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+
+"""## Matriz de Correlación"""
+
+# Se utilizan las columnas que se consideran relevantes para el modelo.
+categorical_features = ['pass_rating', 'set_type', 'set_location', 'hit_type',
+                        'block_touch', 'serve_type', 'win_reason',
+                        'lose_reason', 'team']
+
+df = df.drop('winning_team', axis=1)
+
+df_encoded = pd.get_dummies(df, columns=categorical_features, drop_first=True)
+
+correlation_matrix = df_encoded.corr()
+plt.figure(figsize=(20, 16))
+sns.heatmap(correlation_matrix, cmap='coolwarm', center=0, linewidths=0.5)
+plt.title("Matriz de Correlación (Numéricas + Categóricas)")
+plt.tight_layout()
+plt.show()
+
+"""Observamos como `lose_reason` y `win_reason` están directamente correlacionadas (r=1) por lo que a la hora de entrenar nuestros modelos podemos eliminar una de ellas para evitar redundancias y no aumentar la complejidad de los mismos."""
