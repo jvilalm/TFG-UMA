@@ -29,9 +29,9 @@ df = pd.read_csv('../dataset_full.csv', sep=',')
 
 # Definir columnas
 categorical_features = ['pass_rating', 'set_type', 'set_location', 'block_touch',
-                        'serve_type', 'win_reason', 'lose_reason', 'team']
+                        'serve_type', 'team']
 numeric_features = ['receive_location', 'digger_location', 'pass_land_location',
-                    'hitter_location', 'hit_land_location', 'num_blockers']
+                    'hitter_location', 'num_blockers']
 
 # Filtrar datos con hit_type no nulo
 df_filtered = df[categorical_features + numeric_features + ['hit_type']].copy()

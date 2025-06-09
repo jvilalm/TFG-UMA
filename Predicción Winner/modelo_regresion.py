@@ -29,9 +29,9 @@ Añadiremos el resto de columnas útiles para entrenar el modelo dentro de la va
 """
 
 # Columnas categóricas
+# No se utilizarán las columnas `win_reason` y `lose_reason` ya que la información la aportan después de conocer el resultado del rally.
 categorical_features = ['pass_rating', 'set_type', 'set_location', 'hit_type',
-                        'block_touch', 'serve_type', 'win_reason',
-                        'lose_reason', 'winning_team', 'team']
+                        'block_touch', 'serve_type', 'team']
 
 # Columnas numéricas útiles para el modelo
 features = categorical_features + [
@@ -58,7 +58,8 @@ En este primer modelo crearemos una columna target con el objetivo de predecir s
 
 # Crear columna objetivo
 # El modelo aprende a predecir si el equipo que está realizando esta jugada va a ser el que eventualmente gane el rally completo.
-
+# Se crea una columna `target` que indica si el equipo actual (`team`) es el mismo que el equipo ganador del rally (`winning_team`).
+# Los valores de `target` serán 1 si el equipo actual es el ganador y 0 en caso contrario.
 df_imputed['target'] = (df['team'] == df['winning_team']).astype(int)
 
 """## Procesamiento

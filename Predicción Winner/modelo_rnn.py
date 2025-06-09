@@ -9,9 +9,6 @@ Original file is located at
 # Modelo RNN
 """
 
-import matplotlib
-#matplotlib.use('TkAgg')
-import pandas as pd
 from keras.src.utils import pad_sequences
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
@@ -46,8 +43,7 @@ df['rally_uid'] = df['match_id'] + '_' + df['rally'].astype(str)
 # Definir columnas para el modelo
 # Se utilizan las columnas que se consideran relevantes para el modelo.
 categorical_features = ['pass_rating', 'set_type', 'set_location', 'hit_type',
-                        'block_touch', 'serve_type', 'win_reason',
-                        'lose_reason', 'team']
+                        'block_touch', 'serve_type', 'team']
 
 numeric_features = ['receive_location', 'digger_location', 'pass_land_location',
                     'hitter_location', 'hit_land_location', 'num_blockers']
@@ -93,7 +89,7 @@ preprocessor = ColumnTransformer(
     remainder='passthrough'
 )
 X_prepared = preprocessor.fit_transform(X_input)
-X_array = X_prepared.toarray()
+X_array = X_prepared
 
 # Crear target numérico
 df_lstm['target'] = (df_lstm[target_col] == 'b').astype(int)
@@ -177,5 +173,5 @@ cm = confusion_matrix(y_test, y_pred)
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['No ganó', 'Ganó'], yticklabels=['No ganó', 'Ganó'])
 plt.xlabel('Predicción')
 plt.ylabel('Real')
-plt.title('Matriz de Confusión LSTM')
+plt.title('Matriz de Confusión RNN')
 plt.show()
