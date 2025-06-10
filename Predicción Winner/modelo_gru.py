@@ -9,9 +9,6 @@ Original file is located at
 # Modelo GRU
 """
 
-import matplotlib
-#matplotlib.use('TkAgg')
-import pandas as pd
 from keras.src.utils import pad_sequences
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
@@ -26,6 +23,10 @@ from sklearn.utils.class_weight import compute_class_weight
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import RocCurveDisplay
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import brier_score_loss
 
 # Cargar el dataset
 df = pd.read_csv('../dataset_full.csv', sep=',')
@@ -169,6 +170,22 @@ y_pred = (y_pred_probs >= 0.5).astype(int)
 
 """## Resultados"""
 
+# Mostrar la curva ROC usando las probabilidades predichas
+RocCurveDisplay.from_predictions(y_test, y_pred_probs)
+plt.title('Curva ROC (GRU)')
+plt.show()
+
+# Calcular AUC
+auc = roc_auc_score(y_test, y_pred_probs)
+print(f'AUC: {auc:.4f}')
+
+# Calcular MAE
+mae = mean_absolute_error(y_test, y_pred)
+print(f'Error Absoluto Medio (MAE): {mae:.4f}')
+
+# Calcular Brier Score
+brier = brier_score_loss(y_test, y_pred_probs)
+print(f'Brier Score: {brier:.4f}')
 # Reporte
 print(classification_report(y_test, y_pred))
 

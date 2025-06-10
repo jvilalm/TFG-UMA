@@ -23,6 +23,10 @@ from sklearn.utils.class_weight import compute_class_weight
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import RocCurveDisplay
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import brier_score_loss
 
 # Cargar el dataset
 df = pd.read_csv('../dataset_full.csv', sep=',')
@@ -41,9 +45,12 @@ df.drop(columns='rally_diff', inplace=True)
 df['match_id'] = df['match_id'].astype(str)
 df['rally_uid'] = df['match_id'] + '_' + df['rally'].astype(str)
 
+
 # Definir columnas para el modelo
 # Se utilizan las columnas que se consideran relevantes para el modelo.
-# Se han excluido las columnas `win_reason` y `lose_reason` ya que la información la aportan después de conocer el resultado del rally.
+
+# Se han excluido las columnas `win_reason` y `lose_reason` ya que la información
+# la aportan después de conocer el resultado del rally.
 categorical_features = ['pass_rating', 'set_type', 'set_location', 'hit_type',
                         'block_touch', 'serve_type', 'team']
 
@@ -122,11 +129,6 @@ Finalmente dividiremos los datos de forma aleatoria en un 80% para entrenar el m
 # División de datos
 X_train, X_test, y_train, y_test = train_test_split(X_padded, y_array, test_size=0.2, random_state=42)
 
-# Calcular pesos para balancear clases
-weights = compute_class_weight(class_weight='balanced',
-                                classes=np.unique(y_train),
-                                y=y_train)
-class_weights = dict(zip(np.unique(y_train), weights))
 
 # Definir el modelo
 model = Sequential()
@@ -136,6 +138,12 @@ model.add(Dropout(0.3))  # Regularización
 model.add(Dense(32))
 model.add(LeakyReLU(alpha=0.01))
 model.add(Dense(1, activation='sigmoid'))
+
+# Calcular pesos para balancear clases
+weights = compute_class_weight(class_weight='balanced',
+                                classes=np.unique(y_train),
+                                y=y_train)
+class_weights = dict(zip(np.unique(y_train), weights))
 
 # Compilación
 model.compile(optimizer=Adam(learning_rate=0.001),
@@ -167,6 +175,22 @@ y_pred = (y_pred_probs >= 0.5).astype(int)
 
 """## Resultados"""
 
+# Mostrar la curva ROC usando las probabilidades predichas
+RocCurveDisplay.from_predictions(y_test, y_pred_probs)
+plt.title('Curva ROC (LSTM)')
+plt.show()
+
+# Calcular AUC
+auc = roc_auc_score(y_test, y_pred_probs)
+print(f'AUC: {auc:.4f}')
+
+# Calcular MAE
+mae = mean_absolute_error(y_test, y_pred)
+print(f'Error Absoluto Medio (MAE): {mae:.4f}')
+
+# Calcular Brier Score
+brier = brier_score_loss(y_test, y_pred_probs)
+print(f'Brier Score: {brier:.4f}')
 # Reporte
 print(classification_report(y_test, y_pred))
 

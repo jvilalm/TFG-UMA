@@ -19,6 +19,10 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import RocCurveDisplay
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import brier_score_loss
 
 # Cargar el dataset
 df = pd.read_csv('../dataset_full.csv', sep=',')
@@ -29,7 +33,8 @@ Añadiremos el resto de columnas útiles para entrenar el modelo dentro de la va
 """
 
 # Columnas categóricas
-# No se utilizarán las columnas `win_reason` y `lose_reason` ya que la información la aportan después de conocer el resultado del rally.
+# No se utilizarán las columnas `win_reason` y `lose_reason` ya que la información
+# la aportan después de conocer el resultado del rally.
 categorical_features = ['pass_rating', 'set_type', 'set_location', 'hit_type',
                         'block_touch', 'serve_type', 'team']
 
@@ -69,6 +74,8 @@ Separaremos la columna target del resto. Aplicaremos finalmente one hot encoder 
 # Separar variables
 X = df_imputed.drop(columns='target')
 y = df_imputed['target']
+# División de datos
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Pipeline de preprocesamiento y modelo
 preprocessor = ColumnTransformer(
@@ -89,15 +96,33 @@ model = Pipeline(steps=[
 Finalmente dividiremos los datos de forma aleatoria en un 80% para entrenar el modelo y un 20% sobre el que aplicaremos el mismo para validarlo.
 """
 
-# División de datos
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
 # Entrenamiento del modelo
 model.fit(X_train, y_train)
 # Predicción de resultados
 y_pred = model.predict(X_test)
 
-
 """## Resultados"""
+
+# Obtener probabilidades predichas para la clase positiva
+y_proba = model.predict_proba(X_test)[:, 1]
+
+# Mostrar la curva ROC
+RocCurveDisplay.from_estimator(model, X_test, y_test)
+plt.title('Curva ROC (Regresión Logística)')
+plt.show()
+
+# Calcular AUC
+auc = roc_auc_score(y_test, y_proba)
+print(f'AUC: {auc:.4f}')
+
+# Calcular MAE
+mae = mean_absolute_error(y_test, y_pred)
+print(f'Error Absoluto Medio (MAE): {mae:.4f}')
+
+# Calcular Brier Score
+brier = brier_score_loss(y_test, y_proba)
+print(f'Brier Score: {brier:.4f}')
 
 # Clasificación del modelo
 print(classification_report(y_test, y_pred))

@@ -23,12 +23,15 @@ from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
+from sklearn.metrics import roc_auc_score, roc_curve, RocCurveDisplay, mean_absolute_error, brier_score_loss, log_loss
+from sklearn.preprocessing import label_binarize
 
 # Cargar el dataset
 df = pd.read_csv('../dataset_full.csv', sep=',')
 
 # Definir columnas
-categorical_features = ['pass_rating', 'set_type', 'set_location', 'block_touch',
+categorical_features = ['pass_rating', 'set_type', 'set_location',
                         'serve_type', 'team']
 numeric_features = ['receive_location', 'digger_location', 'pass_land_location',
                     'hitter_location', 'num_blockers']
@@ -86,6 +89,26 @@ cm = confusion_matrix(y_test, y_pred, labels=rf_model.classes_)
 print("Reporte de clasificación Random Forest:")
 print(classification_report(y_test, y_pred))
 
+# Binariza usando las clases del modelo
+y_test_bin = label_binarize(y_test, classes=rf_model.classes_)
+# Definir las clases usando el modelo entrenado
+classes = rf_model.classes_
+
+# --- RANDOM FOREST ---
+y_proba_rf = rf_model.predict_proba(X_test)
+print("Random Forest:")
+for i, clase in enumerate(classes):
+    fpr, tpr, _ = roc_curve(y_test_bin[:, i], y_proba_rf[:, i])
+    auc_score = roc_auc_score(y_test_bin[:, i], y_proba_rf[:, i])
+    RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=auc_score, estimator_name=f"RF - {clase}").plot()
+    plt.title(f"Curva ROC - Random Forest - Clase {clase}")
+    plt.show()
+    print(f"AUC (Clase {clase}): {auc_score:.4f}")
+mae_rf = mean_absolute_error(y_test_bin, y_proba_rf)
+brier_rf = np.mean([brier_score_loss(y_test_bin[:, i], y_proba_rf[:, i]) for i in range(len(rf_model.classes_))])
+print(f"MAE RF: {mae_rf:.4f}")
+print(f"Brier Score RF: {brier_rf:.4f}")
+
 # Visualización de la matriz de confusión
 plt.figure(figsize=(10, 6))
 sns.heatmap(cm, annot=True, fmt='d', xticklabels=rf_model.classes_, yticklabels=rf_model.classes_, cmap='Blues')
@@ -100,7 +123,7 @@ plt.show()
 # Escalar los datos y entrenar SVM
 svm_pipeline = Pipeline([
     ('scaler', StandardScaler(with_mean=False)),  # Escalado necesario para SVM
-    ('svc', SVC(kernel='rbf', C=1, gamma='scale'))  # Puedes ajustar kernel, C y gamma
+    ('svc', SVC(kernel='rbf', C=1, gamma='scale', probability=True))  # Puedes ajustar kernel, C y gamma
 ])
 
 # Entrenamiento
@@ -108,6 +131,23 @@ svm_pipeline.fit(X_train, y_train)
 
 # Predicción
 y_pred_svm = svm_pipeline.predict(X_test)
+y_proba_svm = svm_pipeline.predict_proba(X_test)
+classes_svm = svm_pipeline.classes_
+y_test_bin_svm = label_binarize(y_test, classes=classes_svm)
+# Mostrar la curva ROC para cada clase
+print("SVM:")
+for i, clase in enumerate(classes_svm):
+    fpr, tpr, _ = roc_curve(y_test_bin_svm[:, i], y_proba_svm[:, i])
+    auc_score = roc_auc_score(y_test_bin_svm[:, i], y_proba_svm[:, i])
+    RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=auc_score, estimator_name=f"SVM - {clase}").plot()
+    plt.title(f"Curva ROC - SVM - Clase {clase}")
+    plt.show()
+    print(f"AUC (Clase {clase}): {auc_score:.4f}")
+# Calcular MAE y Brier Score
+mae_svm = mean_absolute_error(y_test_bin_svm, y_proba_svm)
+brier_svm = np.mean([brier_score_loss(y_test_bin_svm[:, i], y_proba_svm[:, i]) for i in range(len(classes_svm))])
+print(f"MAE SVM: {mae_svm:.4f}")
+print(f"Brier Score SVM: {brier_svm:.4f}")
 
 # Evaluación
 print("Reporte de clasificación SVM:")
@@ -132,11 +172,30 @@ knn_model.fit(X_train, y_train)
 
 # Predicción
 y_pred_knn = knn_model.predict(X_test)
+y_proba_knn = knn_model.predict_proba(X_test)
+classes_knn = knn_model.classes_
+y_test_bin_knn = label_binarize(y_test, classes=classes_knn)
 
+# Mostrar la curva ROC para cada clase
+print("KNN:")
+for i, clase in enumerate(classes_knn):
+    fpr, tpr, _ = roc_curve(y_test_bin_knn[:, i], y_proba_knn[:, i])
+    auc_score = roc_auc_score(y_test_bin_knn[:, i], y_proba_knn[:, i])
+    RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=auc_score, estimator_name=f"KNN - {clase}").plot()
+    plt.title(f"Curva ROC - KNN - Clase {clase}")
+    plt.show()
+    print(f"AUC (Clase {clase}): {auc_score:.4f}")
+mae_knn = mean_absolute_error(y_test_bin_knn, y_proba_knn)
+brier_knn = np.mean([brier_score_loss(y_test_bin_knn[:, i], y_proba_knn[:, i]) for i in range(len(classes_knn))])
+# Mostrar MAE y Brier Score
+print(f"MAE KNN: {mae_knn:.4f}")
+print(f"Brier Score KNN: {brier_knn:.4f}")
 
 # Evaluación
 print("Reporte de clasificación KNN:")
 print(classification_report(y_test, y_pred_knn))
+
+# Matriz de confusión
 cm = confusion_matrix(y_test, y_pred_knn, labels=knn_model.classes_)
 plt.figure(figsize=(10, 6))
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
