@@ -441,7 +441,7 @@ print(hit_type_summary)
 plt.figure(figsize=(10, 6))
 hit_type_percentages.sort_index().plot(kind='bar',color = colors_serve)
 
-plt.title('Distribución Porcentual de Tipo de Colocación (hit_type)')
+plt.title('Distribución Porcentual de Tipo de Remate (hit_type)')
 plt.xlabel('Tipo de Ataque')
 plt.ylabel('Porcentaje (%)')
 plt.xticks(rotation=0)
